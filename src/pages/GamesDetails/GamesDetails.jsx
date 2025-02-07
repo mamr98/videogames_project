@@ -44,9 +44,7 @@ console.log({game})
                   className="w-full h-40 object-cover rounded-lg"
               />
               <h3 className="text-lg font-semibold mt-2">{game.name}</h3>
-              <p className="text-gray-600">⭐ {game.rating}</p>              
-              <p className="text-gray-600">⭐ {game.genres.name}</p>                             
-                            
+              <p className="text-gray-600">⭐ {game.rating}</p>                                  
               </div>
           </Link>
       </section> 

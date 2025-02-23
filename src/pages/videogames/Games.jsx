@@ -1,53 +1,34 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-
-const API_KEY = "e621543c33ee44e48e7b82cfdc83fb23";
+import { fetchGames } from "../../service/games";
 
 const Games = () => {
   const [games, setGames] = useState([]);
   const [isLoading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [timeoutId, setTimeoutId] = useState(null);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
 
-  // Función para obtener juegos de la API
-  const fetchGames = async (query = "") => {
-    try {
-      setLoading(true);
-      let url = `https://api.rawg.io/api/games?key=${API_KEY}&page_size=40`;
-
-      if (query) {
-        url += `&search=${query}`;
-      }
-
-      console.log(`Fetching: ${url}`);
-      const response = await fetch(url);
-      if (!response.ok) throw new Error("Error al obtener los juegos");
-
-      const data = await response.json();
-      setGames(data.results || []);
-    } catch (error) {
-      console.error("Error:", error);
-      setGames([]);
-    } finally {
-      setLoading(false);
-    }
+  const loadGames = async (query = "", pageNum = 1) => {
+    setLoading(true);
+    const data = await fetchGames(query, pageNum);
+    setGames(data.results);
+    setTotalPages(Math.ceil(data.count / 40));
+    setLoading(false);
   };
 
-  // Cargar juegos al inicio
   useEffect(() => {
-    fetchGames();
-  }, []);
+    loadGames(searchTerm, page);
+  }, [searchTerm, page]);
 
-  // Buscar juegos en la API cuando cambia el término de búsqueda
   useEffect(() => {
     if (timeoutId) clearTimeout(timeoutId);
-
     const newTimeoutId = setTimeout(() => {
-      fetchGames(searchTerm);
+      setPage(1);
+      loadGames(searchTerm, 1);
     }, 500);
-
     setTimeoutId(newTimeoutId);
-
     return () => clearTimeout(newTimeoutId);
   }, [searchTerm]);
 
@@ -85,17 +66,26 @@ const Games = () => {
                     className="w-full h-48 object-cover"
                   />
                   <div className="p-4">
-                    <h3 className="text-xl font-bold text-white mb-2 truncate">{game.name}</h3>
+                    <h3 className="text-xl font-bold text-white mb-2 truncate">
+                      {game.name}
+                    </h3>
                     <div className="flex justify-between items-center">
-                      <p className="text-yellow-400 font-semibold">⭐ {game.rating}</p>
+                      <p className="text-yellow-400 font-semibold">
+                        ⭐ {game.rating}
+                      </p>
                       <span className="bg-yellow-400 text-gray-900 text-xs font-bold px-2 py-1 rounded">
-                        {game.released ? new Date(game.released).getFullYear() : "N/A"}
+                        {game.released
+                          ? new Date(game.released).getFullYear()
+                          : "N/A"}
                       </span>
                     </div>
                     <div className="mt-3 flex flex-wrap gap-2">
                       {game.genres &&
                         game.genres.slice(0, 3).map((genre) => (
-                          <span key={genre.id} className="bg-gray-700 text-gray-300 text-xs px-2 py-1 rounded">
+                          <span
+                            key={genre.id}
+                            className="bg-gray-700 text-gray-300 text-xs px-2 py-1 rounded"
+                          >
                             {genre.name}
                           </span>
                         ))}
@@ -105,10 +95,29 @@ const Games = () => {
               </Link>
             ))
           ) : (
-            <p className="text-center text-gray-400 text-lg">No se encontraron juegos.</p>
+            <p className="text-center text-gray-400 text-lg">
+              No se encontraron juegos.
+            </p>
           )}
         </div>
       )}
+      <div className="flex justify-center mt-8 gap-4">
+        <button
+          onClick={() => setPage((prev) => Math.max(prev - 1, 1))}
+          disabled={page === 1}
+          className="px-6 py-3 bg-gray-700 text-white font-bold rounded-md shadow-md disabled:opacity-50"
+        >
+          Anterior
+        </button>
+        <span className="text-white font-bold">Página {page} de {totalPages}</span>
+        <button
+          onClick={() => setPage((prev) => (prev < totalPages ? prev + 1 : prev))}
+          disabled={page === totalPages}
+          className="px-6 py-3 bg-yellow-400 text-gray-900 font-bold rounded-md shadow-md disabled:opacity-50"
+        >
+          Siguiente
+        </button>
+      </div>      
     </section>
   );
 };

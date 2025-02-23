@@ -3,6 +3,7 @@ import { Link } from "react-router-dom"; // Corrección en el import de 'react-r
 import Slider from "react-slick";
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
+import { fetchGameHome } from "../../service/games";
 
 const API_KEY = "e621543c33ee44e48e7b82cfdc83fb23";
 
@@ -11,22 +12,24 @@ function Home() {
   const [games, setGames] = useState([]);
 
   useEffect(() => {
-    const fetchGames = async () => {
-      try {
-        const response = await fetch(`https://api.rawg.io/api/games?key=${API_KEY}`);
-        if (!response.ok) throw new Error("Error al obtener los juegos");
-
-        const data = await response.json();
-        setGames(data.results); // Almacena los resultados en el estado
-      } catch (error) {
-        console.error("Error:", error);
-      } finally {
-        setIsLoading(false);
-      }
+    
+    const loadGames = async () => {
+      const fetchGames = await fetchGameHome();
+      setGames(fetchGames);
+      setIsLoading(false);
     };
 
-    fetchGames();
+    loadGames();
+    
   }, []);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-amber-600">
+        <div className="animate-pulse text-blue-600 text-2xl">Cargando los mejores juegos...</div>
+      </div>
+    );
+  }
 
   const settings = {
     dots: true,

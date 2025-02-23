@@ -1,37 +1,47 @@
-import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
-import { useLoaderData } from "react-router-dom";
-import { Link } from "react-router-dom";
+"use client"
 
-const API_KEY = "e621543c33ee44e48e7b82cfdc83fb23";
+import { useEffect, useState } from "react"
+import { useLoaderData, Link } from "react-router-dom"
+import { fetchGameDetails } from "../../service/games"
 
-export async function loader({params}) {
-  const id = params.id;
-  return {id};
+// Exportación del loader
+export async function loader({ params }) {
+  try {
+    const gameDetails = await fetchGameDetails(params.id)
+    if (!gameDetails) {
+      throw new Error("Game not found")
+    }
+    return { gameDetails }
+  } catch (error) {
+    throw new Error("Failed to load game details")
+  }
 }
 
-function GameDetails() {
-  const { id } = useLoaderData();
-  const [game, setGame] = useState({});
-console.log({game})
+// Definición del componente con export default
+function GamesDetails() {
+  const { gameDetails } = useLoaderData()
+  const [game, setGame] = useState(gameDetails)
+  const [isLoading, setLoading] = useState(false)
 
   useEffect(() => {
-    const fetchGameDetails = async () => {
-      try {
-        const response = await fetch(`https://api.rawg.io/api/games/${id}?key=${API_KEY}`);
-        if (!response.ok) throw new Error("Error al obtener los detalles del juego");
+    setGame(gameDetails)
+  }, [gameDetails])
 
-        const data = await response.json();
-        setGame(data);
-      } catch (error) {
-        console.error("Error:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-screen bg-gray-900">
+        <p className="text-yellow-400 text-2xl font-semibold animate-pulse">Cargando detalles...</p>
+      </div>
+    )
+  }
 
-    fetchGameDetails();
-  }, []); 
+  if (!game) {
+    return (
+      <div className="flex justify-center items-center h-screen bg-gray-900">
+        <p className="text-red-500 text-2xl font-semibold">Error al cargar el juego.</p>
+      </div>
+    )
+  }
 
   return (
     <>
@@ -53,4 +63,4 @@ console.log({game})
   );
 }
 
-export default GameDetails;
+export default fetchGameDetails;

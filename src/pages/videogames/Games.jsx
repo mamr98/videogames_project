@@ -1,36 +1,47 @@
-import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
-import { fetchGames } from "../../service/games";
+"use client"
+
+import { useEffect, useState, useCallback } from "react"
+import { Link } from "react-router-dom"
+import { fetchGames } from "../../service/games"
 
 const Games = () => {
-  const [games, setGames] = useState([]);
-  const [isLoading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [timeoutId, setTimeoutId] = useState(null);
-  const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
+  const [games, setGames] = useState([])
+  const [isLoading, setLoading] = useState(true)
+  const [searchTerm, setSearchTerm] = useState("")
+  const [page, setPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
 
-  const loadGames = async (query = "", pageNum = 1) => {
-    setLoading(true);
-    const data = await fetchGames(query, pageNum);
-    setGames(data.results);
-    setTotalPages(Math.ceil(data.count / 40));
-    setLoading(false);
-  };
+  // Memoizamos la función loadGames con useCallback
+  const loadGames = useCallback(async (query, pageNum) => {
+    setLoading(true)
+    try {
+      const data = await fetchGames(query, pageNum)
+      setGames(data.results)
+      setTotalPages(Math.ceil(data.count / 40))
+    } catch (error) {
+      console.error("Error loading games:", error)
+    } finally {
+      setLoading(false)
+    }
+  }, []) // Sin dependencias ya que no usa ningún estado dentro
 
+  // Efecto para la búsqueda con debounce
   useEffect(() => {
-    loadGames(searchTerm, page);
-  }, [searchTerm, page]);
+    const timeoutId = setTimeout(() => {
+      setPage(1)
+      loadGames(searchTerm, 1)
+    }, 500)
 
+    return () => clearTimeout(timeoutId)
+  }, [searchTerm, loadGames]) // Incluimos searchTerm y loadGames como dependencias
+
+  // Efecto para cambios de página
   useEffect(() => {
-    if (timeoutId) clearTimeout(timeoutId);
-    const newTimeoutId = setTimeout(() => {
-      setPage(1);
-      loadGames(searchTerm, 1);
-    }, 500);
-    setTimeoutId(newTimeoutId);
-    return () => clearTimeout(newTimeoutId);
-  }, [searchTerm]);
+    if (page > 1) {
+      // Solo cargar si la página es mayor a 1
+      loadGames(searchTerm, page)
+    }
+  }, [page, searchTerm, loadGames]) // Incluimos las dependencias necesarias
 
   return (
     <section className="min-h-screen bg-gradient-to-b from-gray-900 to-gray-800 p-8">
@@ -50,9 +61,7 @@ const Games = () => {
 
       {isLoading ? (
         <div className="flex justify-center items-center h-64">
-          <p className="text-yellow-400 text-xl font-semibold animate-pulse">
-            Cargando juegos...
-          </p>
+          <p className="text-yellow-400 text-xl font-semibold animate-pulse">Cargando juegos...</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -66,26 +75,17 @@ const Games = () => {
                     className="w-full h-48 object-cover"
                   />
                   <div className="p-4">
-                    <h3 className="text-xl font-bold text-white mb-2 truncate">
-                      {game.name}
-                    </h3>
+                    <h3 className="text-xl font-bold text-white mb-2 truncate">{game.name}</h3>
                     <div className="flex justify-between items-center">
-                      <p className="text-yellow-400 font-semibold">
-                        ⭐ {game.rating}
-                      </p>
+                      <p className="text-yellow-400 font-semibold">⭐ {game.rating}</p>
                       <span className="bg-yellow-400 text-gray-900 text-xs font-bold px-2 py-1 rounded">
-                        {game.released
-                          ? new Date(game.released).getFullYear()
-                          : "N/A"}
+                        {game.released ? new Date(game.released).getFullYear() : "N/A"}
                       </span>
                     </div>
                     <div className="mt-3 flex flex-wrap gap-2">
                       {game.genres &&
                         game.genres.slice(0, 3).map((genre) => (
-                          <span
-                            key={genre.id}
-                            className="bg-gray-700 text-gray-300 text-xs px-2 py-1 rounded"
-                          >
+                          <span key={genre.id} className="bg-gray-700 text-gray-300 text-xs px-2 py-1 rounded">
                             {genre.name}
                           </span>
                         ))}
@@ -95,9 +95,7 @@ const Games = () => {
               </Link>
             ))
           ) : (
-            <p className="text-center text-gray-400 text-lg">
-              No se encontraron juegos.
-            </p>
+            <p className="text-center text-gray-400 text-lg col-span-full">No se encontraron juegos.</p>
           )}
         </div>
       )}
@@ -109,7 +107,9 @@ const Games = () => {
         >
           Anterior
         </button>
-        <span className="text-white font-bold">Página {page} de {totalPages}</span>
+        <span className="text-white font-bold">
+          Página {page} de {totalPages}
+        </span>
         <button
           onClick={() => setPage((prev) => (prev < totalPages ? prev + 1 : prev))}
           disabled={page === totalPages}
@@ -117,9 +117,10 @@ const Games = () => {
         >
           Siguiente
         </button>
-      </div>      
+      </div>
     </section>
-  );
-};
+  )
+}
 
-export default Games;
+export default Games
+

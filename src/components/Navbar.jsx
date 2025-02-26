@@ -35,6 +35,18 @@ const Navbar = () => {
             <FaGamepad className="mr-2" />
             <span>VideoJuegos</span>
           </NavLink>
+
+          <NavLink
+            to="/publisher"
+            className={({ isActive }) =>
+              `flex items-center px-3 py-2 rounded-md text-lg font-medium transition-colors duration-200 ${
+                isActive ? "bg-white text-indigo-600" : "text-white hover:bg-indigo-500"
+              }`
+            }
+          >
+            <FaGamepad className="mr-2" />
+            <span>Publisher</span>
+          </NavLink>
         </div>
       </div>
     </nav>
